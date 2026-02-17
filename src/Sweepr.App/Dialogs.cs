@@ -67,12 +67,18 @@ internal sealed class LeftoverDialog : Form
             _list.Items.Add(row);
         }
 
-        // registry keys are backed up to .reg before deletion.
-         // allow ticking registry keys too (backed up before deletion).
+        var hasFolders = leftovers.Any(l => l.Kind == LeftoverKind.Folder);
+        var hasRegistry = leftovers.Any(l => l.Kind == LeftoverKind.RegistryKey);
+        var labelText = (hasFolders, hasRegistry) switch
+        {
+            (true, false) => "Review the folders below. Ticked folders will be deleted.",
+            (false, true) => "Review the registry keys below. Ticked keys will be backed up to .reg, then deleted.",
+            _ => "Review the items below. Ticked folders will be deleted. Ticked registry keys will be backed up to .reg, then deleted."
+        };
 
         var top = new Label
         {
-            Text = "Review the items below. Ticked folders will be deleted. Ticked registry keys will be backed up to .reg, then deleted.",
+            Text = labelText,
             Dock = DockStyle.Top,
             Height = 36,
             Padding = new Padding(8, 8, 8, 0)

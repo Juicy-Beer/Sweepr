@@ -376,31 +376,46 @@ public sealed class MainForm : Form
             return;
         }
 
-        using var dialog = new LeftoverDialog(program.Name, leftovers, preCheckFolders: mode == ScanMode.Safe);
-        if (dialog.ShowDialog(this) != DialogResult.OK) return;
+        var folders = leftovers.Where(l => l.Kind == LeftoverKind.Folder).ToList();
+        var regKeys = leftovers.Where(l => l.Kind == LeftoverKind.RegistryKey).ToList();
 
-        var selected = dialog.SelectedFolders.ToList();
-        // also collect selected registry keys from the dialog.
-        var selectedRegistry = dialog.SelectedRegistryKeys.ToList();
-
-        var message = "";
-        if (selected.Count > 0)
+        // first window: leftover files/folders.
+        if (folders.Count > 0)
         {
-            var (deleted, errors) = await Task.Run(() => LeftoverCleaner.DeleteFolders(selected));
-            message += $"Deleted {deleted} folder(s).";
-            if (errors.Count > 0) message += "\n\nProblems:\n" + string.Join("\n", errors.Take(10));
+            using var folderDialog = new LeftoverDialog(program.Name, folders, preCheckFolders: mode == ScanMode.Safe);
+            if (folderDialog.ShowDialog(this) == DialogResult.OK)
+            {
+                var selectedFolders = folderDialog.SelectedFolders.ToList();
+                if (selectedFolders.Count > 0)
+                {
+                    var (deleted, errors) = await Task.Run(() => LeftoverCleaner.DeleteFolders(selectedFolders));
+                    var msg = $"Deleted {deleted} folder(s).";
+                    if (errors.Count > 0) msg += "\n\nProblems:\n" + string.Join("\n", errors.Take(10));
+                    MessageBox.Show(this, msg, "Sweepr", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+            }
         }
-        if (selectedRegistry.Count > 0)
-        {
-            var (deleted, errors, backups) = await Task.Run(() => LeftoverCleaner.DeleteRegistryKeys(selectedRegistry, null));
-            if (message.Length > 0) message += "\n";
-            message += $"Deleted {deleted} registry key(s), backed up to {backups.Count} .reg file(s).";
-            if (errors.Count > 0) message += "\n\nProblems:\n" + string.Join("\n", errors.Take(10));
-            if (backups.Count > 0) message += "\n\nBackups: " + string.Join(", ", backups);
-        }
-        if (selected.Count == 0 && selectedRegistry.Count == 0) return;
 
-        MessageBox.Show(this, message, "Sweepr", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        // second window: registry keys (backed up before deletion).
+        if (regKeys.Count > 0)
+        {
+            using var regDialog = new LeftoverDialog(program.Name, regKeys, preCheckFolders: false);
+            if (regDialog.ShowDialog(this) == DialogResult.OK)
+            {
+                var selectedReg = regDialog.SelectedRegistryKeys.ToList();
+                if (selectedReg.Count > 0)
+                {
+                    var (deleted, errors, backups) = await Task.Run(() => LeftoverCleaner.DeleteRegistryKeys(selectedReg, null));
+                    var msg = $"Deleted {deleted} registry key(s), backed up to {backups.Count} .reg file(s).";
+                    if (errors.Count > 0) msg += "\n\nProblems:\n" + string.Join("\n", errors.Take(10));
+                    if (backups.Count > 0) msg += "\n\nBackups: " + string.Join(", ", backups);
+                    MessageBox.Show(this, msg, "Sweepr", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+            }
+        }
+
+        if (folders.Count == 0 && regKeys.Count == 0)
+            MessageBox.Show(this, "No leftovers found.", "Sweepr", MessageBoxButtons.OK, MessageBoxIcon.Information);
     }
 
     private void OpenInstallFolder()

@@ -13,15 +13,15 @@
 - [x] Install date / size accuracy fixes
 
 ## Phase 3: more uninstall targets
-- [ ] Windows Apps (Store/UWP) via PowerShell Get-AppxPackage
-- [ ] Browser extensions (Chrome, Edge, Firefox)
-- [ ] Multiple/quick uninstall queue
-- [ ] Target Picker (drag a target onto a window/tray icon)
+- [x] Windows Apps (Store/UWP) via PowerShell Get-AppxPackage
+- [x] Browser extensions (Chrome, Edge, Firefox)
+- [x] Multiple/quick uninstall queue
+- [x] Target Picker (drag a target onto a window/tray icon)
 
 ## Phase 4: install tracking
-- [ ] Install monitor: snapshot files + registry before/after install
-- [ ] Tracked Programs view
-- [ ] Logs database (SQLite)
+- [x] Install monitor: snapshot files + registry before/after install
+- [x] Tracked Programs view
+- [x] Logs database (SQLite)
 
 ## Phase 5: registry cleaner
 - [ ] 15+ scan categories, 4 scan modes

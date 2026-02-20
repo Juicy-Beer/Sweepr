@@ -37,7 +37,9 @@ public sealed class MainForm : Form
     };
 
     private List<InstalledProgram> _all = new();
+    private readonly UninstallQueue _queue = new();
     private ToolStripButton? _viewButton;
+    private ToolStripButton? _targetPickerButton;
     private int _sortColumn;
     private bool _sortAscending = true;
 
@@ -81,6 +83,12 @@ public sealed class MainForm : Form
         _toolbar.Items.Add(_viewButton);
         _toolbar.Items.Add(new ToolStripSeparator());
         _toolbar.Items.Add(MakeButton("Restore backup", () => OpenRestoreDialog()));
+        _toolbar.Items.Add(new ToolStripSeparator());
+        _toolbar.Items.Add(MakeButton("Windows Apps", () => OpenWindowsAppsDialog()));
+        _toolbar.Items.Add(MakeButton("Browser Ext", () => OpenBrowserExtensionsDialog()));
+        _toolbar.Items.Add(MakeButton("Queue", () => OpenQueueDialog()));
+        _targetPickerButton = MakeButton("Target Picker", () => OpenTargetPicker());
+        _toolbar.Items.Add(_targetPickerButton);
 
         // search row
         _searchBy.Items.AddRange(new object[] { "Name", "Company" });
@@ -130,6 +138,8 @@ public sealed class MainForm : Form
         menu.Items.Add(new ToolStripSeparator());
         menu.Items.Add("Open install folder", null, (_, _) => OpenInstallFolder());
         menu.Items.Add("Search online", null, (_, _) => SearchOnline());
+        menu.Items.Add(new ToolStripSeparator());
+        menu.Items.Add("Add to queue", null, (_, _) => { var p = Selected; if (p is not null) _queue.Add(p); });
         return menu;
     }
 
@@ -217,6 +227,30 @@ public sealed class MainForm : Form
         var folder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Sweepr", "Backups");
         using var dlg = new LeftoverDialog.RestoreBackupDialog(folder);
         dlg.ShowDialog(this);
+    }
+
+    private void OpenWindowsAppsDialog()
+    {
+        using var dlg = new WindowsAppsDialog();
+        dlg.ShowDialog(this);
+    }
+
+    private void OpenBrowserExtensionsDialog()
+    {
+        using var dlg = new BrowserExtensionsDialog();
+        dlg.ShowDialog(this);
+    }
+
+    private void OpenQueueDialog()
+    {
+        using var dlg = new UninstallQueueDialog(_queue);
+        dlg.ShowDialog(this);
+    }
+
+    private void OpenTargetPicker()
+    {
+        using var dlg = new TargetPickerForm();
+        dlg.Show(this);
     }
 
     private void ToggleView()

@@ -7,6 +7,26 @@ namespace Sweepr.Core.Services;
 // deletes folders the user approved, registry deletion comes in phase 2 (with backups)
 public static class LeftoverCleaner
 {
+    // deletes files captured by an install trace.
+    public static (int Deleted, List<string> Errors) DeleteFiles(IEnumerable<string> paths)
+    {
+        int deleted = 0;
+        var errors = new List<string>();
+        foreach (var p in paths)
+        {
+            try
+            {
+                if (File.Exists(p)) { File.Delete(p); deleted++; }
+                else if (Directory.Exists(p)) { Directory.Delete(p, recursive: true); deleted++; }
+            }
+            catch (Exception ex) when (ex is UnauthorizedAccessException or IOException)
+            {
+                errors.Add($"{p}: {ex.Message}");
+            }
+        }
+        return (deleted, errors);
+    }
+
     public static (int Deleted, List<string> Errors) DeleteFolders(IEnumerable<Leftover> items)
     {
         int deleted = 0;
@@ -16,7 +36,7 @@ public static class LeftoverCleaner
         {
             if (ProtectedPaths.IsProtectedFolder(item.Path))
             {
-                errors.Add($"Skipped protected folder: {item.Path}");
+                errors.Add($"skipped protected folder: {item.Path}");
                 continue;
             }
 

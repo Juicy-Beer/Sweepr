@@ -422,7 +422,7 @@ public sealed class MainForm : Form
         // first window: leftover files/folders.
         if (folders.Count > 0)
         {
-            using var folderDialog = new LeftoverDialog(program.Name, folders, preCheckFolders: _settings.CheckMarkAllLeftoversByDefault | mode == ScanMode.Safe);
+            using var folderDialog = new LeftoverTreeViewDialog(program.Name, folders);
             if (folderDialog.ShowDialog(this) == DialogResult.OK)
             {
                 var selectedFolders = folderDialog.SelectedFolders.ToList();
@@ -439,7 +439,7 @@ public sealed class MainForm : Form
         // second window: registry keys (backed up before deletion).
         if (regKeys.Count > 0)
         {
-            using var regDialog = new LeftoverDialog(program.Name, regKeys, preCheckFolders: _settings.CheckMarkAllLeftoversByDefault);
+            using var regDialog = new LeftoverTreeViewDialog(program.Name, regKeys);
             if (regDialog.ShowDialog(this) == DialogResult.OK)
             {
                 var selectedReg = regDialog.SelectedRegistryKeys.ToList();

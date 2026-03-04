@@ -62,7 +62,7 @@ internal sealed class LeftoverDialog : Form
             var row = new ListViewItem(new[] { isFolder ? "Folder" : "Registry (review only)", item.Path })
             {
                 Tag = item,
-                Checked = isFolder && preCheckFolders
+                Checked = preCheckFolders
             };
             _list.Items.Add(row);
         }

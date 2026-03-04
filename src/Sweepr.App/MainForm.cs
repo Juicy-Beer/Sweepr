@@ -56,6 +56,22 @@ public sealed class MainForm : Form
         Load += (_, _) => RefreshPrograms();
         KeyDown += OnKeyDown;
 
+        // first-run: show license, then settings.
+        if (!_settings.FirstRunCompleted)
+        {
+            using var license = new LicenseDialog();
+            if (license.ShowDialog(this) != DialogResult.OK)
+            {
+                // declined license - close the app.
+                Close();
+                return;
+            }
+            using var settings = new SettingsDialog(_settings);
+            settings.ShowDialog(this);
+            _settings.FirstRunCompleted = true;
+            _settings.Save();
+        }
+
         // load a custom window icon if present next to the exe.
         try
         {

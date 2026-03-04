@@ -24,16 +24,16 @@
 - [x] Logs database (SQLite)
 
 ## Phase 5: registry cleaner
-- [ ] 15+ scan categories, 4 scan modes
-- [ ] Include/exclude custom keys
-- [ ] Auto + full registry backup
-- [ ] Registry tweaks (50), scheduled auto clean
-- [ ] Registry Watcher, review/save/export changes
+- [x] 15+ scan categories, 4 scan modes
+- [x] Include/exclude custom keys
+- [x] Auto + full registry backup
+- [x] Registry tweaks (50), scheduled auto clean
+- [x] Registry Watcher, review/save/export changes
 
 ## Phase 6: extra tools
-- [ ] Autorun manager, junk files cleaner, browser cleaner
-- [ ] Office cleaner, Windows cleaner, history cleaner
-- [ ] Secure delete
+- [x] Autorun manager, junk files cleaner, browser cleaner
+- [x] Office cleaner, Windows cleaner, history cleaner
+- [x] Secure delete
 
 ## Phase 7: release
 - [ ] Inno Setup installer + portable zip on GitHub Releases

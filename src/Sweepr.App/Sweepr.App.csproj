@@ -16,6 +16,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Sweepr.Core\Sweepr.Core.csproj" />
+    <EmbeddedResource Include="..\..\LICENSE" Link="LICENSE.txt" />
   </ItemGroup>
 
 </Project>

@@ -1,4 +1,5 @@
 using Sweepr.Core.Services;
+using Sweepr.Core.Settings;
 
 namespace Sweepr.App;
 
@@ -88,6 +89,7 @@ internal sealed class JunkFilesCleanerDialog : Form
     private readonly Button _scan = new() { Text = "Scan", Width = 80 };
     private readonly Button _clean = new() { Text = "Clean selected", Width = 120 };
     private readonly Button _close = new() { Text = "Close", Width = 80, DialogResult = DialogResult.Cancel };
+    private readonly AppSettings _settings = AppSettings.Load();
     private readonly Label _status = new() { Dock = DockStyle.Top, Height = 24, Padding = new Padding(8, 4, 8, 0) };
 
     public JunkFilesCleanerDialog()
@@ -114,7 +116,7 @@ internal sealed class JunkFilesCleanerDialog : Form
         _status.Text = "Scanning...";
         UseWaitCursor = true;
         List<JunkFilesCleaner.JunkItem> items;
-        try { items = JunkFilesCleaner.Scan(); }
+        try { items = JunkFilesCleaner.Scan(_settings.IgnoreFilesAccessedLast24Hours, _settings.JunkPatterns); }
         finally { UseWaitCursor = false; }
         foreach (var it in items)
             _list.Items.Add(new ListViewItem(new[] { it.Path, (it.SizeBytes / 1024).ToString() }) { Tag = it, Checked = true });
@@ -125,7 +127,7 @@ internal sealed class JunkFilesCleanerDialog : Form
     {
         var selected = _list.CheckedItems.Cast<ListViewItem>().Select(i => (JunkFilesCleaner.JunkItem)i.Tag!).ToList();
         if (selected.Count == 0) return;
-        var (deleted, freed, errors) = JunkFilesCleaner.Delete(selected);
+        var (deleted, freed, errors) = JunkFilesCleaner.Delete(selected, _settings.DeleteJunkToRecycleBin);
         var msg = $"Deleted {deleted} files, freed {freed / 1024} KB.";
         if (errors.Count > 0) msg += "\n\nProblems:\n" + string.Join("\n", errors.Take(10));
         MessageBox.Show(this, msg, "Sweepr", MessageBoxButtons.OK, MessageBoxIcon.Information);

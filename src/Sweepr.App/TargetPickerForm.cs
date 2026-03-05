@@ -90,7 +90,7 @@ internal sealed class TargetPickerForm : Form
             var leftovers = LeftoverScanner.Scan(match, options.Mode);
             if (leftovers.Count > 0)
             {
-                using var dlg = new LeftoverDialog(match.Name, leftovers, preCheckFolders: options.Mode == ScanMode.Safe);
+                using var dlg = new LeftoverTreeViewDialog(match.Name, leftovers);
                 if (dlg.ShowDialog(this) == DialogResult.OK)
                 {
                     var selected = dlg.SelectedFolders.ToList();

@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using Sweepr.Core.Models;
 using Sweepr.Core.Services;
+using Sweepr.Core.Settings;
 
 namespace Sweepr.App;
 
@@ -37,6 +38,7 @@ public sealed class MainForm : Form
     };
 
     private List<InstalledProgram> _all = new();
+    private readonly AppSettings _settings = AppSettings.Load();
     private readonly UninstallQueue _queue = new();
     private ToolStripButton? _viewButton;
     private ToolStripButton? _targetPickerButton;
@@ -83,6 +85,8 @@ public sealed class MainForm : Form
         _toolbar.Items.Add(_viewButton);
         _toolbar.Items.Add(new ToolStripSeparator());
         _toolbar.Items.Add(MakeButton("Restore backup", () => OpenRestoreDialog()));
+        _toolbar.Items.Add(new ToolStripSeparator());
+        _toolbar.Items.Add(MakeButton("Options", () => OpenSettingsDialog()));
         _toolbar.Items.Add(new ToolStripSeparator());
         _toolbar.Items.Add(MakeButton("Registry Cleaner", () => OpenRegistryCleanerDialog()));
         _toolbar.Items.Add(MakeButton("Tweaks", () => OpenRegistryTweaksDialog()));
@@ -171,7 +175,7 @@ public sealed class MainForm : Form
     private void RefreshPrograms()
     {
         UseWaitCursor = true;
-        try { _all = ProgramScanner.GetInstalledPrograms(); }
+        try { _all = ProgramScanner.GetInstalledPrograms(_settings.ShowSystemComponents); }
         finally { UseWaitCursor = false; }
         ApplyFilter();
     }
@@ -229,6 +233,16 @@ public sealed class MainForm : Form
         int unit = 0;
         while (value >= 1024 && unit < units.Length - 1) { value /= 1024; unit++; }
         return $"{value:0.##} {units[unit]}";
+    }
+
+    private void OpenSettingsDialog()
+    {
+        using var dlg = new SettingsDialog(_settings);
+        if (dlg.ShowDialog(this) == DialogResult.OK)
+        {
+            _settings.Save();
+            RefreshPrograms();
+        }
     }
 
     private void OpenRestoreDialog()
@@ -345,11 +359,14 @@ public sealed class MainForm : Form
         try
         {
             Enabled = false;
-            // try to create a restore point first; warn but continue if it fails.
-            var rpOk = await Task.Run(() => SystemRestore.CreateRestorePoint($"Sweepr: {program.Name}"));
-            if (!rpOk)
-                MessageBox.Show(this, "Could not create a System Restore point. Continuing anyway.", "Sweepr", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-            await UninstallRunner.RunAsync(program);
+            if (_settings.CreateRestorePointBeforeUninstall)
+            {
+                // try to create a restore point first; warn but continue if it fails.
+                var rpOk = await Task.Run(() => SystemRestore.CreateRestorePoint($"Sweepr: {program.Name}"));
+                if (!rpOk)
+                    MessageBox.Show(this, "Could not create a System Restore point. Continuing anyway.", "Sweepr", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            }
+            await UninstallRunner.RunAsync(program, _settings.ForciblyStopRunningExecutables);
         }
         catch (Exception ex)
         {
@@ -360,9 +377,6 @@ public sealed class MainForm : Form
         {
             Enabled = true;
         }
-
-        await ScanAndReviewAsync(program, options.Mode);
-        RefreshPrograms();
     }
 
     private async Task ForcedUninstallSelectedAsync()
@@ -378,9 +392,12 @@ public sealed class MainForm : Form
         using var options = new ScanOptionsDialog();
         if (options.ShowDialog(this) != DialogResult.OK) return;
 
-        var rpOk = await Task.Run(() => SystemRestore.CreateRestorePoint($"Sweepr: {program.Name} (forced)"));
-        if (!rpOk)
-            MessageBox.Show(this, "Could not create a System Restore point. Continuing anyway.", "Sweepr", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+        if (_settings.CreateRestorePointBeforeUninstall)
+        {
+            var rpOk = await Task.Run(() => SystemRestore.CreateRestorePoint($"Sweepr: {program.Name} (forced)"));
+            if (!rpOk)
+                MessageBox.Show(this, "Could not create a System Restore point. Continuing anyway.", "Sweepr", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+        }
 
         await ScanAndReviewAsync(program, options.Mode);
         RefreshPrograms();
@@ -405,13 +422,13 @@ public sealed class MainForm : Form
         // first window: leftover files/folders.
         if (folders.Count > 0)
         {
-            using var folderDialog = new LeftoverDialog(program.Name, folders, preCheckFolders: mode == ScanMode.Safe);
+            using var folderDialog = new LeftoverDialog(program.Name, folders, preCheckFolders: _settings.CheckMarkAllLeftoversByDefault | mode == ScanMode.Safe);
             if (folderDialog.ShowDialog(this) == DialogResult.OK)
             {
                 var selectedFolders = folderDialog.SelectedFolders.ToList();
                 if (selectedFolders.Count > 0)
                 {
-                    var (deleted, errors) = await Task.Run(() => LeftoverCleaner.DeleteFolders(selectedFolders));
+                    var (deleted, errors) = await Task.Run(() => LeftoverCleaner.DeleteFolders(selectedFolders, _settings.DeleteLeftoversToRecycleBin));
                     var msg = $"Deleted {deleted} folder(s).";
                     if (errors.Count > 0) msg += "\n\nProblems:\n" + string.Join("\n", errors.Take(10));
                     MessageBox.Show(this, msg, "Sweepr", MessageBoxButtons.OK, MessageBoxIcon.Information);
@@ -422,7 +439,7 @@ public sealed class MainForm : Form
         // second window: registry keys (backed up before deletion).
         if (regKeys.Count > 0)
         {
-            using var regDialog = new LeftoverDialog(program.Name, regKeys, preCheckFolders: false);
+            using var regDialog = new LeftoverDialog(program.Name, regKeys, preCheckFolders: _settings.CheckMarkAllLeftoversByDefault);
             if (regDialog.ShowDialog(this) == DialogResult.OK)
             {
                 var selectedReg = regDialog.SelectedRegistryKeys.ToList();
@@ -437,9 +454,13 @@ public sealed class MainForm : Form
             }
         }
 
-        if (folders.Count == 0 && regKeys.Count == 0)
-            MessageBox.Show(this, "No leftovers found.", "Sweepr", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        if (folders.Count == 0)
+        {
+            if (regKeys.Count == 0)
+                MessageBox.Show(this, "No leftovers found.", "Sweepr", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        }
     }
+
 
     private void OpenInstallFolder()
     {

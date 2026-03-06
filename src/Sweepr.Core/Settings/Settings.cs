@@ -23,6 +23,7 @@ public sealed class AppSettings
 
     public bool DeleteJunkToRecycleBin { get; set; } = false;
     public bool IgnoreFilesAccessedLast24Hours { get; set; } = false;
+    public bool FirstRunCompleted { get; set; } = false;
     public List<string> JunkPatterns { get; set; } = new()
     {
         "*.tmp", "*.temp", "*.old", "*.bak", "*.log", "*.chk",

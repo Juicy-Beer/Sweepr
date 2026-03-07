@@ -84,11 +84,20 @@ public sealed class MainForm : Form
         _toolbar.Items.Add(new ToolStripSeparator());
         _toolbar.Items.Add(MakeButton("Restore backup", () => OpenRestoreDialog()));
         _toolbar.Items.Add(new ToolStripSeparator());
+        _toolbar.Items.Add(MakeButton("Registry Cleaner", () => OpenRegistryCleanerDialog()));
+        _toolbar.Items.Add(MakeButton("Tweaks", () => OpenRegistryTweaksDialog()));
+        _toolbar.Items.Add(MakeButton("Watcher", () => ToggleWatcher()));
+        _toolbar.Items.Add(new ToolStripSeparator());
+        _toolbar.Items.Add(MakeButton("Traced", () => OpenTracedProgramsDialog()));
+        _toolbar.Items.Add(MakeButton("Monitor", () => OpenInstallMonitorDialog()));
+        _toolbar.Items.Add(new ToolStripSeparator());
         _toolbar.Items.Add(MakeButton("Windows Apps", () => OpenWindowsAppsDialog()));
         _toolbar.Items.Add(MakeButton("Browser Ext", () => OpenBrowserExtensionsDialog()));
         _toolbar.Items.Add(MakeButton("Queue", () => OpenQueueDialog()));
         _targetPickerButton = MakeButton("Target Picker", () => OpenTargetPicker());
         _toolbar.Items.Add(_targetPickerButton);
+        _toolbar.Items.Add(new ToolStripSeparator());
+        _toolbar.Items.Add(MakeButton("Tools", () => OpenExtraToolsDialog()));
 
         // search row
         _searchBy.Items.AddRange(new object[] { "Name", "Company" });
@@ -252,6 +261,20 @@ public sealed class MainForm : Form
         using var dlg = new TargetPickerForm();
         dlg.Show(this);
     }
+
+    private void OpenRegistryCleanerDialog() { using var d = new RegistryCleanerDialog(); d.ShowDialog(this); }
+    private void OpenRegistryTweaksDialog() { using var d = new RegistryTweaksDialog(); d.ShowDialog(this); }
+    private void OpenTracedProgramsDialog() { using var d = new TracedProgramsDialog(); d.ShowDialog(this); }
+    private void OpenInstallMonitorDialog() { using var d = new InstallMonitorDialog(); d.ShowDialog(this); }
+    private void OpenExtraToolsDialog() { using var d = new ExtraToolsDialog(); d.ShowDialog(this); }
+
+    private void ToggleWatcher()
+    {
+        if (_watcherOn) { RegistryWatcher.Stop(); _watcherOn = false; MessageBox.Show(this, "Watcher stopped.", "Sweepr", MessageBoxButtons.OK, MessageBoxIcon.Information); }
+        else { RegistryWatcher.Start(TimeSpan.FromSeconds(5)); _watcherOn = true; MessageBox.Show(this, "Watcher started (5s interval).", "Sweepr", MessageBoxButtons.OK, MessageBoxIcon.Information); }
+    }
+
+    private bool _watcherOn;
 
     private void ToggleView()
     {

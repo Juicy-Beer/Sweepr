@@ -9,6 +9,7 @@
     <AssemblyName>Sweepr</AssemblyName>
     <RootNamespace>Sweepr.App</RootNamespace>
     <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>app.ico</ApplicationIcon>
     <ApplicationHighDpiMode>SystemAware</ApplicationHighDpiMode>
     <Version>0.1.0</Version>
   </PropertyGroup>

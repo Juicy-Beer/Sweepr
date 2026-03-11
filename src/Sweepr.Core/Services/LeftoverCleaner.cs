@@ -27,7 +27,7 @@ public static class LeftoverCleaner
         return (deleted, errors);
     }
 
-    public static (int Deleted, List<string> Errors) DeleteFolders(IEnumerable<Leftover> items)
+    public static (int Deleted, List<string> Errors) DeleteFolders(IEnumerable<Leftover> items, bool toRecycleBin = false)
     {
         int deleted = 0;
         var errors = new List<string>();
@@ -44,8 +44,19 @@ public static class LeftoverCleaner
             {
                 if (Directory.Exists(item.Path))
                 {
-                    Directory.Delete(item.Path, recursive: true);
-                    deleted++;
+                    if (toRecycleBin && RecycleBin.Delete(item.Path))
+                    {
+                        deleted++;
+                    }
+                    else if (!toRecycleBin)
+                    {
+                        Directory.Delete(item.Path, recursive: true);
+                        deleted++;
+                    }
+                    else
+                    {
+                        errors.Add($"{item.Path}: recycle bin failed");
+                    }
                 }
             }
             catch (Exception ex) when (ex is UnauthorizedAccessException or IOException)

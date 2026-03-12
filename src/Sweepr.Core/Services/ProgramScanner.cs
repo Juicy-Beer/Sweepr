@@ -19,7 +19,7 @@ public static class ProgramScanner
         (RegistryHive.CurrentUser,  RegistryView.Registry32, "32-bit", "HKEY_CURRENT_USER"),
     };
 
-    public static List<InstalledProgram> GetInstalledPrograms()
+    public static List<InstalledProgram> GetInstalledPrograms(bool showSystemComponents = false)
     {
         var found = new List<InstalledProgram>();
 
@@ -36,7 +36,7 @@ public static class ProgramScanner
                     using var key = uninstall.OpenSubKey(subName);
                     if (key is null) continue;
 
-                    var program = Read(key, $@"{hiveName}\{UninstallPath}\{subName}", arch);
+                    var program = Read(key, $@"{hiveName}\{UninstallPath}\{subName}", arch, showSystemComponents);
                     if (program is not null) found.Add(program);
                 }
             }
@@ -53,14 +53,14 @@ public static class ProgramScanner
             .ToList();
     }
 
-    private static InstalledProgram? Read(RegistryKey key, string keyPath, string arch)
+    private static InstalledProgram? Read(RegistryKey key, string keyPath, string arch, bool showSystemComponents)
     {
         var name = Str(key, "DisplayName").Trim();
         if (name.Length == 0) return null;
 
         // hide system components, updates and hotfixes.
-        if (key.GetValue("SystemComponent") is int sc && sc == 1) return null;
-        if (Str(key, "ParentKeyName").Length > 0) return null;
+        // hide system components, updates and hotfixes (unless enabled in settings).
+        if (!showSystemComponents && key.GetValue("SystemComponent") is int sc && sc == 1) return null;
 
         var releaseType = Str(key, "ReleaseType");
         if (releaseType is "Update" or "Hotfix" or "Security Update" or "Service Pack") return null;

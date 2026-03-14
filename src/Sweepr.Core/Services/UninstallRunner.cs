@@ -9,10 +9,32 @@ public static class UninstallRunner
     // starts the registered uninstall command and waits for it to exit
     // note: some uninstallers copy themselves to a temp folder and exit immediately,
     // so the leftover scan can start before the real uninstall finishes.
-    public static async Task<int> RunAsync(InstalledProgram program)
+    public static async Task<int> RunAsync(InstalledProgram program, bool stopRunningExecutables = false)
     {
         if (string.IsNullOrWhiteSpace(program.UninstallString))
             throw new InvalidOperationException("This program has no uninstall command registered. Try Force Remove.");
+
+        // optionally stop running executables of the program first.
+        if (stopRunningExecutables && !string.IsNullOrWhiteSpace(program.InstallLocation))
+        {
+            try
+            {
+                foreach (var proc in Process.GetProcesses())
+                {
+                    try
+                    {
+                        if (proc.MainModule is not null &&
+                            proc.MainModule.FileName.StartsWith(program.InstallLocation, StringComparison.OrdinalIgnoreCase))
+                        {
+                            proc.Kill();
+                            proc.WaitForExit(5000);
+                        }
+                    }
+                    catch { }
+                }
+            }
+            catch { }
+        }
 
         var psi = new ProcessStartInfo
         {

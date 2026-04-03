@@ -2,7 +2,7 @@
 
 A free, open-source Windows uninstaller that removes programs **and** the leftovers they leave behind (folders and registry keys).
 
-> Status: Phase 6 (extra tools). See [docs/ROADMAP.md](docs/ROADMAP.md).
+> Status: Phase 7 (release). See [docs/ROADMAP.md](docs/ROADMAP.md).
 > Not affiliated with any commercial uninstaller product.
 
 ## What works today

@@ -36,5 +36,6 @@
 - [x] Secure delete
 
 ## Phase 7: release
-- [ ] Inno Setup installer + portable zip on GitHub Releases
+- [x] Inno Setup installer built (dist\Sweepr-Setup.exe)
+- [ ] Portable zip + .exe uploaded to GitHub Releases
 - [ ] Code signing

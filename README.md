@@ -5,7 +5,7 @@ A free, open-source Windows uninstaller that removes programs **and** the leftov
 > Status: Phase 6 (extra tools). See [docs/ROADMAP.md](docs/ROADMAP.md).
 > Not affiliated with any commercial uninstaller product.
 
-## What works today (Phase 2)
+## What works today
 
 - Lists installed programs (HKLM, HKCU, 32-bit and 64-bit) with icons
 - Search by name or company, sortable columns, details panel
@@ -17,6 +17,19 @@ A free, open-source Windows uninstaller that removes programs **and** the leftov
 - System Restore point is created before removal
 - Program icons in the list, Icons/Details view switch
 - Protected paths blocklist (never touches Windows, Program Files root, etc.)
+- Windows Apps (Store/UWP) uninstall via PowerShell
+- Browser extensions (Chrome, Edge, Firefox) management
+- Multiple/quick uninstall queue
+- Target Picker (drag crosshair onto a window/tray icon)
+- Install monitor: snapshot files + registry before/after install
+- Traced Programs view with SQLite logs database
+- Registry cleaner: 10+ scan categories, 4 scan modes
+- Registry tweaks with one-click apply/revert
+- Registry Watcher: live change tracking
+- Extra tools: Autorun manager, Junk Files Cleaner, Browser Cleaner, Secure Delete
+- Options dialog: language, system components, recycle bin, junk patterns, etc.
+- First-run license agreement (GNU GPLv3)
+- Custom app icon from SVG logo
 
 ## Build
 

@@ -37,5 +37,5 @@
 
 ## Phase 7: release
 - [x] Inno Setup installer built (dist\Sweepr-Setup.exe)
-- [ ] Portable zip + .exe uploaded to GitHub Releases
-- [ ] Code signing
+- [x] Portable zip + .exe + installer uploaded to GitHub Releases (v0.1.0)
+- [ ] Code signing (optional)

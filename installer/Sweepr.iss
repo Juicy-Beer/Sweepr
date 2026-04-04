@@ -7,7 +7,6 @@ AppName=Sweepr
 AppVersion=0.1.0
 AppPublisher=Juicy-Beer
 SetupIconFile=..\src\Sweepr.App\app.ico
-SetupIconFile=..\src\Sweepr.App\app.ico
 DefaultDirName={autopf}\Sweepr
 DefaultGroupName=Sweepr
 OutputDir=..\dist

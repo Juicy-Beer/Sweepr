@@ -29,6 +29,7 @@ internal sealed class LeftoverTreeViewDialog : Form
         var root = new TreeNode("My Computer");
         _tree.Nodes.Add(root);
 
+        // registry keys which is hierarchical
         var regRoot = new TreeNode("Registry");
         root.Nodes.Add(regRoot);
         foreach (var lv in leftovers.Where(l => l.Kind == LeftoverKind.RegistryKey))
@@ -47,12 +48,28 @@ internal sealed class LeftoverTreeViewDialog : Form
             node.Tag = lv;
         }
 
+        // folders which is also hierarchical (same style as registry)
         var folderRoot = new TreeNode("Folders");
         root.Nodes.Add(folderRoot);
         foreach (var lv in leftovers.Where(l => l.Kind == LeftoverKind.Folder))
         {
-            var node = new TreeNode(lv.Path) { Tag = lv, Checked = true };
-            folderRoot.Nodes.Add(node);
+            var node = folderRoot;
+            var parts = lv.Path.Split(new[] { '\\' }, StringSplitOptions.RemoveEmptyEntries);
+
+            for (int i = 0; i < parts.Length; i++)
+            {
+                var part = parts[i];
+                var existing = node.Nodes.Cast<TreeNode>()
+                    .FirstOrDefault(n => n.Text.Equals(part, StringComparison.OrdinalIgnoreCase));
+
+                if (existing is null)
+                {
+                    existing = new TreeNode(part) { Checked = true };
+                    node.Nodes.Add(existing);
+                }
+                node = existing;
+            }
+            node.Tag = lv;
         }
 
         root.ExpandAll();
@@ -98,6 +115,7 @@ internal sealed class LeftoverTreeViewDialog : Form
     {
         var node = _tree.SelectedNode;
         if (node is null) { _pathLabel.Text = "Path:"; _keysLabel.Text = "Keys:"; _valuesLabel.Text = "Values:"; return; }
+
         var parts = new List<string>();
         var cur = node;
         while (cur is not null && cur.Parent is not null)

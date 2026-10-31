@@ -62,7 +62,7 @@ public sealed class MainForm : Form
             using var license = new LicenseDialog();
             if (license.ShowDialog(this) != DialogResult.OK)
             {
-                // declined license - close the app.
+                // declined license so close the app.
                 Close();
                 return;
             }
@@ -387,34 +387,14 @@ public sealed class MainForm : Form
         catch (Exception ex)
         {
             MessageBox.Show(this, ex.Message, "Sweepr", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-            return;
+            // still offer the leftover scan even if the uninstaller failed
         }
         finally
         {
             Enabled = true;
         }
-    }
 
-    private async Task ForcedUninstallSelectedAsync()
-    {
-        var program = Selected;
-        if (program is null) return;
-
-        var confirm = MessageBox.Show(this,
-            $"Force remove of \"{program.Name}\" skips the program's own uninstaller and only scans for leftovers.\n\nContinue?",
-            "Sweepr", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
-        if (confirm != DialogResult.Yes) return;
-
-        using var options = new ScanOptionsDialog();
-        if (options.ShowDialog(this) != DialogResult.OK) return;
-
-        if (_settings.CreateRestorePointBeforeUninstall)
-        {
-            var rpOk = await Task.Run(() => SystemRestore.CreateRestorePoint($"Sweepr: {program.Name} (forced)"));
-            if (!rpOk)
-                MessageBox.Show(this, "Could not create a System Restore point. Continuing anyway.", "Sweepr", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-        }
-
+        // scan for leftovers and show the review dialog
         await ScanAndReviewAsync(program, options.Mode);
         RefreshPrograms();
     }
@@ -432,24 +412,37 @@ public sealed class MainForm : Form
             return;
         }
 
-        var folders = leftovers.Where(l => l.Kind == LeftoverKind.Folder).ToList();
-        var regKeys = leftovers.Where(l => l.Kind == LeftoverKind.RegistryKey).ToList();
+        // one dialog for both folders and registry
+        using var dialog = new LeftoverTreeViewDialog(program.Name, leftovers);
+        if (dialog.ShowDialog(this) != DialogResult.OK)
+            return;
 
-        // first window: leftover files/folders.
-        if (folders.Count > 0)
+        var selectedFolders = dialog.SelectedFolders.ToList();
+        var selectedReg = dialog.SelectedRegistryKeys.ToList();
+
+        // delete folders
+        if (selectedFolders.Count > 0)
         {
-            using var folderDialog = new LeftoverTreeViewDialog(program.Name, folders);
-            if (folderDialog.ShowDialog(this) == DialogResult.OK)
-            {
-                var selectedFolders = folderDialog.SelectedFolders.ToList();
-                if (selectedFolders.Count > 0)
-                {
-                    var (deleted, errors) = await Task.Run(() => LeftoverCleaner.DeleteFolders(selectedFolders, _settings.DeleteLeftoversToRecycleBin));
-                    var msg = $"Deleted {deleted} folder(s).";
-                    if (errors.Count > 0) msg += "\n\nProblems:\n" + string.Join("\n", errors.Take(10));
-                    MessageBox.Show(this, msg, "Sweepr", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                }
-            }
+            var (deleted, errors) = await Task.Run(() =>
+                LeftoverCleaner.DeleteFolders(selectedFolders, _settings.DeleteLeftoversToRecycleBin));
+
+            var msg = $"Deleted {deleted} folder(s).";
+            if (errors.Count > 0) msg += "\n\nProblems:\n" + string.Join("\n", errors.Take(10));
+            MessageBox.Show(this, msg, "Sweepr", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        }
+
+        // delete registry keys (backed up before deletion)
+        if (selectedReg.Count > 0)
+        {
+            var (deleted, errors, backups) = await Task.Run(() =>
+                LeftoverCleaner.DeleteRegistryKeys(selectedReg, null));
+
+            var msg = $"Deleted {deleted} registry key(s), backed up to {backups.Count} .reg file(s).";
+            if (errors.Count > 0) msg += "\n\nProblems:\n" + string.Join("\n", errors.Take(10));
+            if (backups.Count > 0) msg += "\n\nBackups: " + string.Join(", ", backups);
+            MessageBox.Show(this, msg, "Sweepr", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        }
+    }
         }
 
         // second window: registry keys (backed up before deletion).

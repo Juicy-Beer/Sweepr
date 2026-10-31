@@ -399,6 +399,30 @@ public sealed class MainForm : Form
         RefreshPrograms();
     }
 
+    private async Task ForcedUninstallSelectedAsync()
+    {
+        var program = Selected;
+        if (program is null) return;
+
+        var confirm = MessageBox.Show(this,
+            $"Force remove of \"{program.Name}\" skips the program's own uninstaller and only scans for leftovers.\n\nContinue?",
+            "Sweepr", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+        if (confirm != DialogResult.Yes) return;
+
+        using var options = new ScanOptionsDialog();
+        if (options.ShowDialog(this) != DialogResult.OK) return;
+
+        if (_settings.CreateRestorePointBeforeUninstall)
+        {
+            var rpOk = await Task.Run(() => SystemRestore.CreateRestorePoint($"Sweepr: {program.Name} (forced)"));
+            if (!rpOk)
+                MessageBox.Show(this, "Could not create a System Restore point. Continuing anyway.", "Sweepr", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+        }
+
+        await ScanAndReviewAsync(program, options.Mode);
+        RefreshPrograms();
+    }
+
     private async Task ScanAndReviewAsync(InstalledProgram program, ScanMode mode)
     {
         UseWaitCursor = true;
@@ -443,33 +467,6 @@ public sealed class MainForm : Form
             MessageBox.Show(this, msg, "Sweepr", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
     }
-        }
-
-        // second window: registry keys (backed up before deletion).
-        if (regKeys.Count > 0)
-        {
-            using var regDialog = new LeftoverTreeViewDialog(program.Name, regKeys);
-            if (regDialog.ShowDialog(this) == DialogResult.OK)
-            {
-                var selectedReg = regDialog.SelectedRegistryKeys.ToList();
-                if (selectedReg.Count > 0)
-                {
-                    var (deleted, errors, backups) = await Task.Run(() => LeftoverCleaner.DeleteRegistryKeys(selectedReg, null));
-                    var msg = $"Deleted {deleted} registry key(s), backed up to {backups.Count} .reg file(s).";
-                    if (errors.Count > 0) msg += "\n\nProblems:\n" + string.Join("\n", errors.Take(10));
-                    if (backups.Count > 0) msg += "\n\nBackups: " + string.Join(", ", backups);
-                    MessageBox.Show(this, msg, "Sweepr", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                }
-            }
-        }
-
-        if (folders.Count == 0)
-        {
-            if (regKeys.Count == 0)
-                MessageBox.Show(this, "No leftovers found.", "Sweepr", MessageBoxButtons.OK, MessageBoxIcon.Information);
-        }
-    }
-
 
     private void OpenInstallFolder()
     {
